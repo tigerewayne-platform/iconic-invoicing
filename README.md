@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Iconic Billing
 
-## Getting Started
+Quotes, invoices and receipts for Iconic Stretch Tents. Separate from the marketing site, same brand.
 
-First, run the development server:
+**Flow:** quote → client accepts online (or you mark it accepted) → convert to invoice with a deposit % → record each payment → a numbered receipt is issued for every payment. Every document has a branded A4 PDF, an email option, a WhatsApp share and a client link.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What's in it
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Quotes** with line items from a price catalogue (packages, extras, services), discount, deposit %, validity date, event details. Status: draft, sent, accepted, declined, expired, invoiced.
+- **Client link** (`/p/<token>`) where the client can view, download the PDF and accept the quote by typing their name. Acceptance is logged.
+- **Invoices** converted from a quote in one click (lines copied, quote locked) or created from scratch. Deposit due now and balance before installation shown on the PDF. Overdue is calculated from the due date. Invoices are never deleted, only voided, so numbering stays sequential.
+- **Receipts** created by recording a payment (EFT, cash, card, SnapScan). Partial payments supported. Invoice flips to part paid / paid automatically.
+- **Clients** with history and amounts owing.
+- **Overview** with outstanding, overdue, open quotes, cash received this month, and upcoming events.
+- **Settings**: business and banking details, VAT switch (off: plain "Invoice"; on: "Tax Invoice" with VAT number and 15%), number prefixes and next numbers, default terms, team logins (admin / staff).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Next.js 16 (App Router, server actions), Postgres via Drizzle ORM, `@react-pdf/renderer` for PDFs, Resend for email (optional), Tailwind v4. Fonts and colours match iconicstretchtents.co.za (Cormorant Garamond, Lexend, #FC0101, #0D0D0D, #F5F2ED).
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Import this repo as a new Vercel project.
+2. Storage tab → add a **Neon Postgres** database to the project. It sets `DATABASE_URL` for you.
+3. Add environment variables:
+   - `AUTH_SECRET`: a long random string (`openssl rand -base64 32`)
+   - `APP_URL`: the public URL, e.g. `https://billing.iconicstretchtents.co.za`
+   - Optional email: `RESEND_API_KEY` and `EMAIL_FROM` (an address on a domain verified in Resend)
+4. Deploy. The build runs the database migrations and seeds the catalogue automatically.
+5. Open the site, you'll land on **first-time setup** to create the admin login. Then fill in Settings (banking details first) and set catalogue prices.
+6. Optional: add the domain `billing.iconicstretchtents.co.za` under Domains.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Local development
+
+```bash
+cp .env.example .env.local   # point DATABASE_URL at a local Postgres
+npm install
+npm run db:migrate
+npm run dev
+```
+
+Schema changes: edit `src/db/schema.ts`, run `npm run db:generate`, commit the new file in `drizzle/`.

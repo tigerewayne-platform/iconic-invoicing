@@ -1,26 +1,56 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-lexend), "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-brand: #FC0101;
+  --color-brand-dark: #D60000;
+  --color-ink: #0D0D0D;
+  --color-panel: #141414;
+  --color-panel-2: #1A1A1A;
+  --color-cream: #F5F2ED;
+  --color-sand: #A39E93;
+  --color-paper: #FAF8F5;
+  --color-line: #E6E1D8;
+  --color-body: #2D2A26;
+  --color-mute: #7A756C;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--color-paper);
+    color: var(--color-body);
+    -webkit-font-smoothing: antialiased;
   }
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+  ::selection { background: #FC010133; }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility input {
+  @apply w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-sand focus:border-ink focus:ring-2 focus:ring-ink/10;
+}
+@utility label {
+  @apply mb-1.5 block text-[10px] font-medium uppercase tracking-[0.18em] text-mute;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
+@utility btn-dark { @apply btn bg-ink text-cream hover:bg-panel-2; }
+@utility btn-ghost { @apply btn border border-line bg-white text-ink hover:border-ink/40; }
+@utility btn-quiet { @apply btn px-2 text-mute hover:text-ink; }
+@utility btn-danger { @apply btn border border-brand/30 bg-white text-brand hover:bg-brand hover:text-white; }
+@utility card { @apply rounded-xl border border-line bg-white; }
+@utility eyebrow { @apply text-[10px] font-medium uppercase tracking-[0.22em] text-brand; }
+
+@layer components {
+  .table-base { @apply w-full text-sm; }
+  .table-base th { @apply border-b border-line px-4 py-2.5 text-left text-[10px] font-medium uppercase tracking-[0.16em] text-mute; }
+  .table-base td { @apply border-b border-line/70 px-4 py-3 align-middle; }
+  .table-base tbody tr:last-child td { @apply border-b-0; }
+  .table-base tbody tr.row-link:hover { @apply bg-paper; }
 }
