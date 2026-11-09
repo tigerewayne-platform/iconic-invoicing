@@ -6,7 +6,7 @@ import { catalogItems, settings } from "../src/db/schema";
 import { sql as dsql } from "drizzle-orm";
 
 async function main() {
-  const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+  const url = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
   if (!url) {
     console.log("[migrate] No DATABASE_URL set, skipping migrations.");
     return;
