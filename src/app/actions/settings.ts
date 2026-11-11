@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { settings, users } from "@/db/schema";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { getSession, requireAdmin, requireUser, startSession, wholeSecondNow } from "@/lib/auth";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -83,6 +83,8 @@ export async function changePassword(_: FormState, fd: FormData): Promise<FormSt
   const next = String(fd.get("next") ?? "");
   if (!(await bcrypt.compare(current, me.passwordHash))) return { error: "Current password is wrong." };
   if (next.length < 8) return { error: "New password must be 8+ characters." };
-  await db.update(users).set({ passwordHash: await bcrypt.hash(next, 10) }).where(eq(users.id, me.id));
-  return { ok: "Password changed." };
+  await db.update(users).set({ passwordHash: await bcrypt.hash(next, 10), passwordChangedAt: wholeSecondNow() }).where(eq(users.id, me.id));
+  // Other devices are signed out; keep this one signed in with a fresh session.
+  await startSession(me, Boolean((await getSession())?.rem));
+  return { ok: "Password changed. Other devices have been signed out." };
 }

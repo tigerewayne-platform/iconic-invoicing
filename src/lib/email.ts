@@ -16,7 +16,7 @@ export async function sendEmail(opts: {
   replyTo?: string;
   subject: string;
   text: string;
-  attachment: { filename: string; content: Buffer };
+  attachment?: { filename: string; content: Buffer };
 }) {
   if (!emailConfigured()) throw new Error("Email isn't set up yet. Add RESEND_API_KEY and EMAIL_FROM.");
   const resend = new Resend(process.env.RESEND_API_KEY);
@@ -27,7 +27,7 @@ export async function sendEmail(opts: {
     replyTo: opts.replyTo || undefined,
     subject: opts.subject,
     text: opts.text,
-    attachments: [{ filename: opts.attachment.filename, content: opts.attachment.content }],
+    attachments: opts.attachment ? [{ filename: opts.attachment.filename, content: opts.attachment.content }] : undefined,
   });
   if (error) throw new Error(error.message);
 }
