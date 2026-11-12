@@ -1,23 +1,40 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { dashboardStats, displayStatus, listDocuments, upcomingEvents } from "@/lib/data";
+import {
+  bookedByEventMonth,
+  cashByMonth,
+  dashboardStats,
+  displayStatus,
+  listDocuments,
+  quoteConversion,
+  receivablesAging,
+  upcomingEvents,
+} from "@/lib/data";
+import { BarList, ChartCard, ColumnChart, rands } from "@/components/charts";
 import { formatDate } from "@/lib/dates";
 import { formatZAR } from "@/lib/money";
 import { PageHeader, Stat, StatusBadge } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
-function rands(c: number) {
-  return formatZAR(c).replace(/\.\d\d$/, "");
-}
 
 export default async function Dashboard() {
   const user = await requireUser();
-  const [stats, events, invoices, quotes] = await Promise.all([
+  const [stats, events, invoices, quotes, cash, booked, aging, conv] = await Promise.all([
     dashboardStats(),
     upcomingEvents(),
     listDocuments("invoice"),
     listDocuments("quote"),
+    cashByMonth(),
+    bookedByEventMonth(),
+    receivablesAging(),
+    quoteConversion(),
   ]);
+  const cashTotal = cash.reduce((a, p) => a + p.value, 0);
+  const bestCash = cash.reduce((a, p) => (p.value > a.value ? p : a), cash[0]);
+  const bookedTotal = booked.reduce((a, p) => a + p.value, 0);
+  const bookedUnpaid = booked.reduce((a, p) => a + p.extra, 0);
+  const owedTotal = aging.reduce((a, b) => a + b.value, 0);
+  const winRate = conv.sent > 0 ? Math.round((conv.won / conv.sent) * 100) : null;
   const attention = [
     ...invoices.filter((r) => r.state === "overdue"),
     ...quotes.filter((r) => r.state === "accepted"),
@@ -53,7 +70,72 @@ export default async function Dashboard() {
         <Stat label="Received this month" value={rands(stats.received_month)} sub={`${rands(stats.invoiced_month)} invoiced`} />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-5">
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <ChartCard
+          title="Cash received"
+          sub={`Last 12 months · ${rands(cashTotal)} in total`}
+          className="lg:col-span-2"
+        >
+          <ColumnChart
+            tableCaption="Cash received per month, last 12 months"
+            columns={cash.map((p, i) => ({
+              key: p.key,
+              label: p.label,
+              value: p.value,
+              callout: i === cash.length - 1 || (p === bestCash && p.value > 0),
+              title: `${p.label} ${p.year}`,
+              tip: [
+                `${p.count} payment${p.count === 1 ? "" : "s"}`,
+                `${rands(p.extra)} invoiced`,
+              ],
+            }))}
+          />
+        </ChartCard>
+
+        <ChartCard title="Booked events ahead" sub={`Next 6 months by event date · ${rands(bookedUnpaid)} of ${rands(bookedTotal)} still unpaid`}>
+          <ColumnChart
+            tableCaption="Booked event value per month, next 6 months"
+            columns={booked.map((p, i) => ({
+              key: p.key,
+              label: p.label,
+              value: p.value,
+              callout: i === 0,
+              title: `${p.label} ${p.year}`,
+              tip: [
+                `${p.count} event${p.count === 1 ? "" : "s"}`,
+                `${rands(p.extra)} still unpaid`,
+              ],
+            }))}
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Money owed"
+          sub={`${rands(owedTotal)} unpaid on sent invoices`}
+          aside={
+            <div className="text-right">
+              <p className="font-serif text-2xl font-semibold leading-none text-ink">{winRate === null ? "–" : `${winRate}%`}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-mute">Quotes won, 90 days</p>
+              <p className="text-[11px] text-mute">
+                {conv.won} of {conv.sent} · {rands(conv.won_value)}
+              </p>
+            </div>
+          }
+        >
+          <BarList
+            tableCaption="Unpaid invoice balance by how late it is"
+            bars={aging.map((b) => ({
+              key: b.key,
+              label: b.label,
+              value: b.value,
+              tone: b.key === "current" ? "soft" : "strong",
+              note: `${b.count} invoice${b.count === 1 ? "" : "s"}`,
+            }))}
+          />
+        </ChartCard>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-5">
         <section className="card lg:col-span-3">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h2 className="font-serif text-xl font-semibold text-ink">Needs attention</h2>
